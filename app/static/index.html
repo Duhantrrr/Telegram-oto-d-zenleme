@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Telegram Panel</title>
+<style>
+  :root{
+    --bg:#0e1116; --card:#161b22; --line:#262d38; --text:#e8edf3; --muted:#8b97a7;
+    --accent:#3aa0ff; --accent-ink:#04121f; --ok:#35c280; --warn:#f0b64a; --err:#ff6b6b;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:860px;margin:0 auto;padding:20px 16px 60px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+  h1{font-size:20px;margin:0;letter-spacing:.2px}
+  h2{font-size:16px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:16px}
+  label{display:block;font-size:13px;color:var(--muted);margin:10px 0 5px}
+  input,textarea{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:inherit}
+  textarea{resize:vertical;min-height:70px}
+  input:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+  button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--text);padding:10px 14px}
+  button:hover{border-color:var(--muted)}
+  button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+  button.danger{color:var(--err)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .row.end{justify-content:flex-end}
+  .grow{flex:1;min-width:140px}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 10px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+  .pill.ok .dot{background:var(--ok)} .pill.ok{color:var(--ok)}
+  .pill.wait .dot{background:var(--warn)} .pill.wait{color:var(--warn)}
+  .msg{min-height:20px;margin-top:10px;font-size:13px}
+  .msg.err{color:var(--err)} .msg.ok{color:var(--ok)}
+  .rule{display:grid;grid-template-columns:1fr auto;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
+  .rule:first-child{border-top:0}
+  .rule .t{font-weight:600;word-break:break-word}
+  .rule .r{color:var(--muted);word-break:break-word;white-space:pre-wrap}
+  .rule.off .t,.rule.off .r{opacity:.45;text-decoration:line-through}
+  .arrow{color:var(--accent)}
+  .acts{display:flex;gap:6px;align-items:flex-start}
+  .acts button{padding:6px 10px;font-size:13px}
+  .log{font:12.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;max-height:240px;overflow:auto}
+  .log div{padding:2px 0;border-top:1px solid var(--line);word-break:break-word}
+  .log div:first-child{border-top:0}
+  .log .k-edit{color:var(--ok)} .log .k-error{color:var(--err)} .log .k-warn{color:var(--warn)}
+  .log .tm{color:var(--muted);margin-right:8px}
+  .hidden{display:none!important}
+  .center{max-width:380px;margin:12vh auto 0}
+  code.sess{display:block;word-break:break-all;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:12px;margin-top:10px;max-height:120px;overflow:auto}
+  .stat{display:flex;gap:18px;flex-wrap:wrap;margin-top:6px}
+  .stat b{display:block;font-size:20px}
+  .stat span{color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+
+<!-- Panel girişi -->
+<div id="loginView" class="wrap center hidden">
+  <div class="card">
+    <h1>Telegram Panel</h1>
+    <p class="sub">Devam etmek için panel şifrenizi girin.</p>
+    <form id="loginForm">
+      <label for="panelPass">Panel şifresi</label>
+      <input id="panelPass" type="password" autocomplete="current-password" required>
+      <div class="row end" style="margin-top:14px"><button class="primary" type="submit">Giriş</button></div>
+      <div class="msg" id="loginMsg"></div>
+    </form>
+  </div>
+</div>
+
+<!-- Ana panel -->
+<div id="appView" class="wrap hidden">
+  <header>
+    <h1>Telegram Panel</h1>
+    <div class="row">
+      <span id="statePill" class="pill"><i class="dot"></i><span id="stateText">…</span></span>
+      <button id="panelLogout">Çıkış</button>
+    </div>
+  </header>
+
+  <!-- Hesap -->
+  <section class="card">
+    <h2>Telegram hesabı</h2>
+    <p class="sub" id="accSub"></p>
+
+    <form id="phoneForm" class="hidden">
+      <label for="phone">Telefon numarası</label>
+      <input id="phone" type="tel" inputmode="tel" placeholder="+905xxxxxxxxx" autocomplete="off">
+      <div class="row end" style="margin-top:14px"><button class="primary" type="submit">Kod gönder</button></div>
+    </form>
+
+    <form id="codeForm" class="hidden">
+      <label for="code">Telegram'dan gelen kod</label>
+      <input id="code" inputmode="numeric" autocomplete="one-time-code" placeholder="12345">
+      <div class="row end" style="margin-top:14px">
+        <button type="button" data-cancel>Vazgeç</button>
+        <button class="primary" type="submit">Giriş yap</button>
+      </div>
+    </form>
+
+    <form id="passForm" class="hidden">
+      <label for="tgPass">İki adımlı doğrulama şifresi</label>
+      <input id="tgPass" type="password" autocomplete="off">
+      <div class="row end" style="margin-top:14px">
+        <button type="button" data-cancel>Vazgeç</button>
+        <button class="primary" type="submit">Onayla</button>
+      </div>
+    </form>
+
+    <div id="accInfo" class="hidden">
+      <div class="stat">
+        <div><b id="meName">—</b><span id="mePhone"></span></div>
+        <div><b id="editCount">0</b><span>düzenlenen mesaj</span></div>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button id="showSession">Oturum anahtarını göster</button>
+        <button id="tgLogout" class="danger">Hesaptan çıkış</button>
+      </div>
+      <code id="sessBox" class="sess hidden"></code>
+      <p id="sessHelp" class="sub hidden" style="margin-top:8px">Render'da <b>SESSION_STRING</b> değişkenine yapıştırırsanız sunucu yeniden başlasa da giriş korunur. Kimseyle paylaşmayın.</p>
+    </div>
+    <div class="msg" id="accMsg"></div>
+  </section>
+
+  <!-- Kurallar -->
+  <section class="card">
+    <h2>Otomatik düzenleme kuralları</h2>
+    <p class="sub">Hesabınızdan gönderdiğiniz mesaj tetikleyiciyle <b>birebir</b> aynıysa (büyük/küçük harf fark etmez) anında yeni metne çevrilir.</p>
+    <form id="ruleForm">
+      <div class="row">
+        <div class="grow"><label for="rTrigger">Yazdığım metin</label><input id="rTrigger" placeholder="ads" maxlength="4096" required></div>
+        <div class="grow"><label for="rRepl">Olacağı metin</label><textarea id="rRepl" rows="2" placeholder="Yeni metin…" maxlength="4096" required></textarea></div>
+      </div>
+      <div class="row end" style="margin-top:12px">
+        <button type="button" id="ruleCancel" class="hidden">Vazgeç</button>
+        <button class="primary" type="submit" id="ruleSubmit">Kural ekle</button>
+      </div>
+      <div class="msg" id="ruleMsg"></div>
+    </form>
+    <div id="ruleList"></div>
+    <div class="row" style="margin-top:10px">
+      <button id="exportRules">Kuralları kopyala (RULES_JSON)</button>
+    </div>
+  </section>
+
+  <!-- Log -->
+  <section class="card">
+    <h2>Son işlemler</h2>
+    <div class="log" id="logBox"></div>
+  </section>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const STATES = {
+  logged_out: ["Giriş yapılmadı", ""],
+  awaiting_code: ["Kod bekleniyor", "wait"],
+  awaiting_password: ["Şifre bekleniyor", "wait"],
+  logged_in: ["Bağlı", "ok"],
+};
+let editingId = null;
+let pollTimer = null;
+
+async function api(method, path, body) {
+  const res = await fetch(path, {
+    method,
+    headers: body ? { "Content-Type": "application/json" } : {},
+    body: body ? JSON.stringify(body) : undefined,
+    credentials: "same-origin",
+  });
+  let data = null;
+  try { data = await res.json(); } catch (_) {}
+  if (!res.ok) {
+    if (res.status === 401 && path !== "/api/panel/login") showLogin();
+    let detail = data && data.detail;
+    if (Array.isArray(detail)) detail = "Girdiğiniz bilgileri kontrol edin";
+    const err = new Error(detail || "İşlem başarısız (" + res.status + ")");
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
+function setMsg(id, text, kind) {
+  const el = $(id);
+  el.textContent = text || "";
+  el.className = "msg" + (kind ? " " + kind : "");
+}
+
+function showLogin() {
+  clearInterval(pollTimer);
+  $("appView").classList.add("hidden");
+  $("loginView").classList.remove("hidden");
+  $("panelPass").focus();
+}
+function showApp() {
+  $("loginView").classList.add("hidden");
+  $("appView").classList.remove("hidden");
+}
+
+/* ---------- panel girişi ---------- */
+$("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  setMsg("loginMsg", "");
+  try {
+    await api("POST", "/api/panel/login", { password: $("panelPass").value });
+    $("panelPass").value = "";
+    await boot();
+  } catch (err) { setMsg("loginMsg", err.message, "err"); }
+});
+$("panelLogout").addEventListener("click", async () => {
+  await api("POST", "/api/panel/logout").catch(() => {});
+  showLogin();
+});
+
+/* ---------- hesap ---------- */
+let phoneFilled = false;
+function renderStatus(s) {
+  const [label, cls] = STATES[s.state] || [s.state, ""];
+  $("stateText").textContent = label;
+  $("statePill").className = "pill " + cls;
+
+  for (const id of ["phoneForm", "codeForm", "passForm", "accInfo"]) $(id).classList.add("hidden");
+  const sub = $("accSub");
+  if (s.state === "logged_out") {
+    $("phoneForm").classList.remove("hidden");
+    sub.textContent = "Numaranızı girin, Telegram'a gelen kodu buradan onaylayın.";
+    if (!phoneFilled) { $("phone").value = s.default_phone || ""; phoneFilled = true; }
+  } else if (s.state === "awaiting_code") {
+    $("codeForm").classList.remove("hidden");
+    sub.textContent = (s.phone || "Numaranıza") + " için kod gönderildi. Telegram uygulamasındaki \"Telegram\" sohbetine bakın.";
+  } else if (s.state === "awaiting_password") {
+    $("passForm").classList.remove("hidden");
+    sub.textContent = "Hesabınızda iki adımlı doğrulama açık. Şifrenizi girin.";
+  } else if (s.state === "logged_in") {
+    $("accInfo").classList.remove("hidden");
+    sub.textContent = "Hesap bağlı. Kurallar şu an aktif.";
+    $("meName").textContent = (s.me && s.me.name) || "—";
+    $("mePhone").textContent = [(s.me && s.me.phone) || "", s.me && s.me.username ? "@" + s.me.username : ""].filter(Boolean).join("  ");
+    $("editCount").textContent = s.edit_count;
+  }
+}
+async function refreshStatus() {
+  try { renderStatus(await api("GET", "/api/status")); } catch (_) {}
+}
+
+async function submitStep(btnForm, path, body, okText) {
+  const btn = btnForm.querySelector("button[type=submit]");
+  btn.disabled = true;
+  setMsg("accMsg", "");
+  try {
+    const s = await api("POST", path, body);
+    renderStatus(s);
+    if (okText) setMsg("accMsg", okText, "ok");
+  } catch (err) { setMsg("accMsg", err.message, "err"); }
+  finally { btn.disabled = false; }
+}
+$("phoneForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  submitStep(e.target, "/api/tg/send-code", { phone: $("phone").value }, "Kod gönderildi");
+});
+$("codeForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  submitStep(e.target, "/api/tg/verify-code", { code: $("code").value }).then(() => { $("code").value = ""; });
+});
+$("passForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  submitStep(e.target, "/api/tg/verify-password", { password: $("tgPass").value }).then(() => { $("tgPass").value = ""; });
+});
+document.querySelectorAll("[data-cancel]").forEach((b) => b.addEventListener("click", async () => {
+  try { renderStatus(await api("POST", "/api/tg/cancel")); setMsg("accMsg", ""); } catch (err) { setMsg("accMsg", err.message, "err"); }
+}));
+$("tgLogout").addEventListener("click", async () => {
+  if (!confirm("Telegram hesabından çıkış yapılsın mı?")) return;
+  try { renderStatus(await api("POST", "/api/tg/logout")); $("sessBox").classList.add("hidden"); $("sessHelp").classList.add("hidden"); }
+  catch (err) { setMsg("accMsg", err.message, "err"); }
+});
+$("showSession").addEventListener("click", async () => {
+  const box = $("sessBox");
+  if (!box.classList.contains("hidden")) { box.classList.add("hidden"); $("sessHelp").classList.add("hidden"); return; }
+  try {
+    const { session } = await api("GET", "/api/session");
+    box.textContent = session;
+    box.classList.remove("hidden"); $("sessHelp").classList.remove("hidden");
+  } catch (err) { setMsg("accMsg", err.message, "err"); }
+});
+
+/* ---------- kurallar ---------- */
+function resetRuleForm() {
+  editingId = null;
+  $("rTrigger").value = ""; $("rRepl").value = "";
+  $("ruleSubmit").textContent = "Kural ekle";
+  $("ruleCancel").classList.add("hidden");
+}
+$("ruleCancel").addEventListener("click", () => { resetRuleForm(); setMsg("ruleMsg", ""); });
+
+$("ruleForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  setMsg("ruleMsg", "");
+  const body = { trigger: $("rTrigger").value, replacement: $("rRepl").value, enabled: true };
+  try {
+    if (editingId) {
+      const cur = rulesCache.find((r) => r.id === editingId);
+      body.enabled = cur ? cur.enabled : true;
+      await api("PUT", "/api/rules/" + editingId, body);
+      setMsg("ruleMsg", "Kural güncellendi", "ok");
+    } else {
+      await api("POST", "/api/rules", body);
+      setMsg("ruleMsg", "Kural eklendi", "ok");
+    }
+    resetRuleForm();
+    await loadRules();
+  } catch (err) { setMsg("ruleMsg", err.message, "err"); }
+});
+
+let rulesCache = [];
+function renderRules() {
+  const box = $("ruleList");
+  box.replaceChildren();
+  if (!rulesCache.length) {
+    const p = document.createElement("p");
+    p.className = "sub"; p.style.marginTop = "14px";
+    p.textContent = "Henüz kural yok. Yukarıdan ekleyin.";
+    box.append(p);
+    return;
+  }
+  for (const r of rulesCache) {
+    const row = document.createElement("div");
+    row.className = "rule" + (r.enabled ? "" : " off");
+
+    const info = document.createElement("div");
+    const t = document.createElement("div"); t.className = "t"; t.textContent = r.trigger;
+    const a = document.createElement("span"); a.className = "arrow"; a.textContent = "↓";
+    const rp = document.createElement("div"); rp.className = "r"; rp.textContent = r.replacement;
+    info.append(t, a, rp);
+
+    const acts = document.createElement("div"); acts.className = "acts";
+    const mk = (text, cls, fn) => { const b = document.createElement("button"); b.textContent = text; if (cls) b.className = cls; b.addEventListener("click", fn); return b; };
+    acts.append(
+      mk(r.enabled ? "Kapat" : "Aç", "", async () => {
+        try { await api("PUT", "/api/rules/" + r.id, { trigger: r.trigger, replacement: r.replacement, enabled: !r.enabled }); await loadRules(); }
+        catch (err) { setMsg("ruleMsg", err.message, "err"); }
+      }),
+      mk("Düzenle", "", () => {
+        editingId = r.id; $("rTrigger").value = r.trigger; $("rRepl").value = r.replacement;
+        $("ruleSubmit").textContent = "Kaydet"; $("ruleCancel").classList.remove("hidden");
+        $("rTrigger").focus(); window.scrollTo({ top: $("ruleForm").offsetTop - 20, behavior: "smooth" });
+      }),
+      mk("Sil", "danger", async () => {
+        if (!confirm("\"" + r.trigger + "\" kuralı silinsin mi?")) return;
+        try { await api("DELETE", "/api/rules/" + r.id); if (editingId === r.id) resetRuleForm(); await loadRules(); }
+        catch (err) { setMsg("ruleMsg", err.message, "err"); }
+      }),
+    );
+    row.append(info, acts);
+    box.append(row);
+  }
+}
+async function loadRules() {
+  try { rulesCache = await api("GET", "/api/rules"); renderRules(); } catch (_) {}
+}
+$("exportRules").addEventListener("click", async () => {
+  try {
+    const { json } = await api("GET", "/api/rules/export");
+    await navigator.clipboard.writeText(json);
+    setMsg("ruleMsg", "Kopyalandı. Render'da RULES_JSON değişkenine yapıştırırsanız kurallar yeniden başlatmada korunur.", "ok");
+  } catch (err) { setMsg("ruleMsg", "Kopyalanamadı: " + err.message, "err"); }
+});
+
+/* ---------- log ---------- */
+async function loadLogs() {
+  try {
+    const items = await api("GET", "/api/logs");
+    const box = $("logBox");
+    box.replaceChildren();
+    if (!items.length) { box.textContent = "Henüz kayıt yok."; return; }
+    for (const it of items) {
+      const d = document.createElement("div");
+      d.className = "k-" + it.kind;
+      const tm = document.createElement("span"); tm.className = "tm";
+      tm.textContent = new Date(it.time).toLocaleTimeString("tr-TR");
+      d.append(tm, document.createTextNode(it.text));
+      box.append(d);
+    }
+  } catch (_) {}
+}
+
+/* ---------- açılış ---------- */
+async function boot() {
+  try {
+    const s = await api("GET", "/api/status");
+    showApp();
+    renderStatus(s);
+    await Promise.all([loadRules(), loadLogs()]);
+    clearInterval(pollTimer);
+    pollTimer = setInterval(() => { refreshStatus(); loadLogs(); }, 4000);
+  } catch (err) {
+    if (err.status === 401) showLogin();
+    else { showLogin(); setMsg("loginMsg", err.message, "err"); }
+  }
+}
+boot();
+</script>
+</body>
+</html>
