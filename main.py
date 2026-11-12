@@ -7,7 +7,6 @@ from telethon.sessions import StringSession
 API_ID = 16896485
 API_HASH = "29b5bb9351b4cb3738d73abaf5eb28ca"
 
-# Geçici hafıza değişkenleri
 phone_hash_global = None
 phone_global = None
 
@@ -26,12 +25,11 @@ async def startup_event():
   if SESSION_STRING:
     try:
       await client.start()
-      print("Mevcut oturumla bot aktif!")
+      print("Oturum başarıyla açıldı!")
     except Exception as e:
-      print(f"Başlangıç oturum hatası: {e}")
+      print(f"Başlangıç hatası: {e}")
 
 
-# 1. ARKA PLAN: Telegram'da otomatik düzenleme
 @client.on(events.NewMessage(outgoing=True))
 async def handle_outgoing_message(event):
   mesaj = event.raw_text.strip()
@@ -53,7 +51,6 @@ async def handle_outgoing_message(event):
     await event.edit(hedef_mesaj)
 
 
-# 2. WEB PANELİ ARAYÜZÜ
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
   is_connected = False
@@ -71,7 +68,7 @@ async def home(request: Request):
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Telegram Giriş</title>
             <style>
-                body { font-family: Arial, sans-serif; background-color: #f4f4f9; text-align: center; padding: 40px; }
+                body { background-color: #f4f4f9; text-align: center; padding: 40px; }
                 .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); display: inline-block; width: 100%; max-width: 350px; }
                 input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
                 button { background: #0088cc; color: white; border: none; padding: 12px; width: 100%; border-radius: 5px; cursor: pointer; font-size: 16px; }
@@ -97,7 +94,7 @@ async def home(request: Request):
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Telegram Kontrol Paneli</title>
         <style>
-            body { font-family: Arial, sans-serif; background-color: #f4f4f9; text-align: center; padding: 20px; }
+            body { background-color: #f4f4f9; text-align: center; padding: 20px; }
             .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); display: inline-block; width: 100%; max-width: 400px; box-sizing: border-box; margin-bottom: 20px; }
             input, select, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
             button { background: #0088cc; color: white; border: none; padding: 12px; width: 100%; border-radius: 5px; cursor: pointer; font-size: 16px; }
@@ -108,7 +105,6 @@ async def home(request: Request):
     </head>
     <body>
         <p class="success">🟢 Bot ve Oturum Aktif!</p>
-
         <div class="card">
             <h2>🚀 Telegram'dan Mesaj Gönder</h2>
             <form action="/send-message" method="post">
@@ -117,7 +113,6 @@ async def home(request: Request):
                 <button type="submit">Mesajı Gönder</button>
             </form>
         </div>
-
         <div class="card">
             <h2>✏️ Mesajı Değiştir</h2>
             <form action="/edit-message" method="post">
@@ -135,7 +130,6 @@ async def home(request: Request):
     """
 
 
-# TELEGRAM KODU GÖNDERME (Form ile alacak şekilde düzeltildi)
 @app.post("/send-code", response_class=HTMLResponse)
 async def send_code(phone: str = Form(...)):
   global client, phone_hash_global, phone_global
@@ -143,15 +137,13 @@ async def send_code(phone: str = Form(...)):
   try:
     if not client.is_connected():
       await client.connect()
-
     result = await client.send_code_request(phone)
     phone_hash_global = result.phone_code_hash
-
     return f"""
         <!DOCTYPE html>
         <html lang="tr">
         <head><meta charset="UTF-8"><title>Kod Gir</title>
-        <style>body { font-family: Arial; text-align: center; padding: 40px; background: #f4f4f9; }
+        <style>body { text-align: center; padding: 40px; background: #f4f4f9; }
         .card { background: white; padding: 20px; border-radius: 10px; display: inline-block; width: 300px; }
         input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
         button { background: #0088cc; color: white; border: none; padding: 10px; width: 100%; border-radius: 5px; }</style>
@@ -172,7 +164,6 @@ async def send_code(phone: str = Form(...)):
     return f"<h3>Hata: {str(e)}</h3><a href='/'>Geri Dön</a>"
 
 
-# KODU ONAYLAYIP GİRİŞ YAPMA (2FA KONTROLÜ İLE)
 @app.post("/verify-code", response_class=HTMLResponse)
 async def verify_code(code: str = Form(...)):
   global client, phone_hash_global, phone_global
@@ -183,13 +174,12 @@ async def verify_code(code: str = Form(...)):
     return basarili_sayfa()
   except Exception as e:
     error_msg = str(e)
-    # Eğer 2 Adımlı Doğrulama (Cloud Şifresi) varsa buraya düşer
     if "SessionPasswordNeededError" in error_msg or "password" in error_msg.lower():
-      return f"""
+      return """
             <!DOCTYPE html>
             <html lang="tr">
             <head><meta charset="UTF-8"><title>2FA Şifre</title>
-            <style>body { font-family: Arial; text-align: center; padding: 40px; background: #f4f4f9; }
+            <style>body { text-align: center; padding: 40px; background: #f4f4f9; }
             .card { background: white; padding: 20px; border-radius: 10px; display: inline-block; width: 300px; }
             input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
             button { background: #0088cc; color: white; border: none; padding: 10px; width: 100%; border-radius: 5px; }</style>
@@ -197,7 +187,7 @@ async def verify_code(code: str = Form(...)):
             <body>
                 <div class="card">
                     <h2>🔒 2 Adımlı Doğrulama</h2>
-                    <p>Hesabınızda şifre var. Lütfen Telegram bulut şifrenizi girin:</p>
+                    <p>Lütfen bulut şifrenizi girin:</p>
                     <form action="/verify-password" method="post">
                         <input type="password" name="password" placeholder="Bulut Şifreniz" required>
                         <button type="submit">Giriş Yap</button>
@@ -209,7 +199,6 @@ async def verify_code(code: str = Form(...)):
     return f"<h3>Giriş Başarısız: {error_msg}</h3><a href='/'>Geri Dön</a>"
 
 
-# 2FA ŞİFRESİNİ DOĞRULAMA
 @app.post("/verify-password", response_class=HTMLResponse)
 async def verify_password(password: str = Form(...)):
   global client
@@ -224,7 +213,7 @@ def basarili_sayfa():
   session_str = client.session.save()
   return f"""
     <h3>✅ Başarıyla Giriş Yapıldı!</h3>
-    <p>Oturumunuz açıldı. Bu uzun kodu kopyalayıp Render'daki <b>SESSION_STRING</b> kısmına yapıştırırsanız bir daha asla kod istemez:</p>
+    <p>Oturumunuz açıldı. Bu kodu kopyalayıp Render'daki <b>SESSION_STRING</b> kısmına eklerseniz bir daha kod istemez:</p>
     <textarea rows="4" style="width:100%;">{session_str}</textarea>
     <br><br>
     <a href="/" style="background:#0088cc; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Panele Git</a>
