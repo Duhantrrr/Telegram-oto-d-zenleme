@@ -66,7 +66,7 @@ async def home(request: Request):
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Telegram Giriş</title>
+            <title>Telegram Giris</title>
             <style>
                 body { background-color: #f4f4f9; text-align: center; padding: 40px; }
                 .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); display: inline-block; width: 100%; max-width: 350px; }
@@ -76,10 +76,10 @@ async def home(request: Request):
         </head>
         <body>
             <div class="card">
-                <h2>🔐 Telegram Giriş Paneli</h2>
+                <h2>Telegram Giris Paneli</h2>
                 <form action="/send-code" method="post">
                     <input type="text" name="phone" value="905315151419" required>
-                    <button type="submit">Kod Gönder</button>
+                    <button type="submit">Kod Gonder</button>
                 </form>
             </div>
         </body>
@@ -104,25 +104,25 @@ async def home(request: Request):
         </style>
     </head>
     <body>
-        <p class="success">🟢 Bot ve Oturum Aktif!</p>
+        <p class="success">Bot ve Oturum Aktif!</p>
         <div class="card">
-            <h2>🚀 Telegram'dan Mesaj Gönder</h2>
+            <h2>Telegramdan Mesaj Gonder</h2>
             <form action="/send-message" method="post">
-                <input type="text" name="chat_id" placeholder="Kime (@kullaniciadi veya ID)" required>
-                <textarea name="message" rows="3" placeholder="Mesajınız..." required></textarea>
-                <button type="submit">Mesajı Gönder</button>
+                <input type="text" name="chat_id" placeholder="Kime (kullaniciadi veya ID)" required>
+                <textarea name="message" rows="3" placeholder="Mesajiniz..." required></textarea>
+                <button type="submit">Mesaji Gonder</button>
             </form>
         </div>
         <div class="card">
-            <h2>✏️ Mesajı Değiştir</h2>
+            <h2>Mesaji Degistir</h2>
             <form action="/edit-message" method="post">
-                <input type="text" name="chat_id" placeholder="Sohbet (@kullaniciadi veya ID)" required>
+                <input type="text" name="chat_id" placeholder="Sohbet (kullaniciadi veya ID)" required>
                 <input type="text" name="message_id" placeholder="Mesaj ID" required>
                 <select name="secim">
-                    <option value="done">Done Şablonu (İngilizce)</option>
-                    <option value="ads">Ads Şablonu (Reklam)</option>
+                    <option value="done">Done Sablonu (Ingilizce)</option>
+                    <option value="ads">Ads Sablonu (Reklam)</option>
                 </select>
-                <button type="submit">Güncelle</button>
+                <button type="submit">Guncelle</button>
             </form>
         </div>
     </body>
@@ -150,10 +150,10 @@ async def send_code(phone: str = Form(...)):
         </head>
         <body>
             <div class="card">
-                <h2>📲 Telegram Kodunu Gir</h2>
-                <p><b>{phone}</b> numarasına gelen kodu yazın:</p>
+                <h2>Telegram Kodunu Gir</h2>
+                <p><b>{phone}</b> numarasina gelen kodu yazin:</p>
                 <form action="/verify-code" method="post">
-                    <input type="text" name="code" placeholder="Örn: 12345" required>
+                    <input type="text" name="code" placeholder="Orn: 12345" required>
                     <button type="submit">Devam Et</button>
                 </form>
             </div>
@@ -161,7 +161,7 @@ async def send_code(phone: str = Form(...)):
         </html>
         """
   except Exception as e:
-    return f"<h3>Hata: {str(e)}</h3><a href='/'>Geri Dön</a>"
+    return f"<h3>Hata: {str(e)}</h3><a href='/'>Geri Don</a>"
 
 
 @app.post("/verify-code", response_class=HTMLResponse)
@@ -178,7 +178,7 @@ async def verify_code(code: str = Form(...)):
       return """
             <!DOCTYPE html>
             <html lang="tr">
-            <head><meta charset="UTF-8"><title>2FA Şifre</title>
+            <head><meta charset="UTF-8"><title>2FA Sifre</title>
             <style>body { text-align: center; padding: 40px; background: #f4f4f9; }
             .card { background: white; padding: 20px; border-radius: 10px; display: inline-block; width: 300px; }
             input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
@@ -186,17 +186,17 @@ async def verify_code(code: str = Form(...)):
             </head>
             <body>
                 <div class="card">
-                    <h2>🔒 2 Adımlı Doğrulama</h2>
-                    <p>Lütfen bulut şifrenizi girin:</p>
+                    <h2>2 Adimli Dogrulama</h2>
+                    <p>Lutfen bulut sifrenizi girin:</p>
                     <form action="/verify-password" method="post">
-                        <input type="password" name="password" placeholder="Bulut Şifreniz" required>
-                        <button type="submit">Giriş Yap</button>
+                        <input type="password" name="password" placeholder="Bulut Sifreniz" required>
+                        <button type="submit">Giris Yap</button>
                     </form>
                 </div>
             </body>
             </html>
             """
-    return f"<h3>Giriş Başarısız: {error_msg}</h3><a href='/'>Geri Dön</a>"
+    return f"<h3>Giris Basarisiz: {error_msg}</h3><a href='/'>Geri Don</a>"
 
 
 @app.post("/verify-password", response_class=HTMLResponse)
@@ -206,14 +206,14 @@ async def verify_password(password: str = Form(...)):
     await client.sign_in(password=password)
     return basarili_sayfa()
   except Exception as e:
-    return f"<h3>Şifre Yanlış: {str(e)}</h3><a href='/'>Geri Dön</a>"
+    return f"<h3>Sifre Yanlis: {str(e)}</h3><a href='/'>Geri Don</a>"
 
 
 def basarili_sayfa():
   session_str = client.session.save()
   return f"""
-    <h3>✅ Başarıyla Giriş Yapıldı!</h3>
-    <p>Oturumunuz açıldı. Bu kodu kopyalayıp Render'daki <b>SESSION_STRING</b> kısmına eklerseniz bir daha kod istemez:</p>
+    <h3>Basariyla Giris Yapildi!</h3>
+    <p>Oturumunuz acildi. Bu kodu kopyalayip Renderdaki SESSION_STRING kismina eklerseniz bir daha kod istemez:</p>
     <textarea rows="4" style="width:100%;">{session_str}</textarea>
     <br><br>
     <a href="/" style="background:#0088cc; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Panele Git</a>
@@ -225,9 +225,9 @@ async def send_message(chat_id: str = Form(...), message: str = Form(...)):
   try:
     target = int(chat_id) if chat_id.isdigit() else chat_id
     await client.send_message(target, message)
-    return "<h3>✅ Mesaj Gönderildi!</h3><a href='/'>Geri Dön</a>"
+    return "<h3>Mesaj Gonderildi!</h3><a href='/'>Geri Don</a>"
   except Exception as e:
-    return f"<h3>Hata: {str(e)}</h3><a href='/'>Geri Dön</a>"
+    return f"<h3>Hata: {str(e)}</h3><a href='/'>Geri Don</a>"
 
 
 @app.post("/edit-message", response_class=HTMLResponse)
@@ -251,6 +251,6 @@ async def edit_message(
       )
 
     await client.edit_message(target, message_id, yeni_metin)
-    return "<h3>✅ Mesaj Güncellendi!</h3><a href='/'>Geri Dön</a>"
+    return "<h3>Mesaj Guncellendi!</h3><a href='/'>Geri Don</a>"
   except Exception as e:
-    return f"<h3>Hata: {str(e)}</h3><a href='/'>Geri Dön</a>"
+    return f"<h3>Hata: {str(e)}</h3><a href='/'>Geri Don</a>"
