@@ -1,0 +1,4 @@
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30
+telethon>=1.40,<2
+itsdangerous>=2.2

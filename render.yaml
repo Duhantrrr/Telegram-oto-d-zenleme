@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: telegram-panel
+    runtime: python
+    plan: starter            # free plan 15 dk işlemsizlikte uyur; bot sürekli çalışsın diye starter önerilir
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: API_ID
+        sync: false
+      - key: API_HASH
+        sync: false
+      - key: PANEL_PASSWORD
+        sync: false
+      - key: PHONE
+        sync: false
+      - key: SESSION_STRING
+        sync: false
+      - key: RULES_JSON
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
