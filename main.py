@@ -3,7 +3,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from telethon import TelegramClient, events
 
-# Verdiğin Telegram API Bilgileri
+# Telegram API Bilgilerin
 API_ID = 16896485
 API_HASH = "29b5bb9351b4cb3738d73abaf5eb28ca"
 
@@ -22,7 +22,7 @@ class EditRequest(BaseModel):
 @app.on_event("startup")
 async def startup_event():
   await client.start()
-  print("Userbot Render üzerinde aktif ve çalışıyor!")
+  print("Userbot aktif ve çalışıyor!")
 
 
 # Telegram'dan yazdığın mesajları anlık yakalayan kısım
@@ -31,17 +31,21 @@ async def handle_outgoing_message(event):
   mesaj = event.raw_text.strip()
   mesaj_kucuk = mesaj.lower()
 
-  # 1. Senaryo: "done" yazılırsa
+  # 1. Senaryo: "done" yazılırsa (Türkçe cümlenin İngilizce çevirisi + link)
   if mesaj_kucuk == "done":
     hedef_mesaj = (
-        "Of course, I translated it into English, I shared your post here:"
-        " t.me/ratlogscloud\n\nhttps://t.me/+vbR5re1Xa-VkOWE0"
+        "I shared your post here\n"
+        "t.me/ratlogscloud\n\n"
+        "https://t.me/+vbR5re1Xa-VkOWE0"
     )
     await event.edit(hedef_mesaj)
 
-  # 2. Senaryo: "Ads" yazılırsa
+  # 2. Senaryo: "ads" yazılırsa (İstediğin metin + link)
   elif mesaj_kucuk == "ads":
-    hedef_mesaj = "Ads to ads @tgciyim"
+    hedef_mesaj = (
+        "Ads to ads @tgciyim\n\n"
+        "https://t.me/+vbR5re1Xa-VkOWE0"
+    )
     await event.edit(hedef_mesaj)
 
 
