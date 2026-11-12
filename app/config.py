@@ -31,6 +31,18 @@ class Settings:
         return self.data_dir / "session.txt"
 
 
+# Senin bilgilerin (Render'da ayar girmene gerek yok)
+DEFAULTS = {
+    "API_ID": "16896485",
+    "API_HASH": "29b5bb9351b4cb3738d73abaf5eb28ca",
+    "PHONE": "905315151419",
+    "PANEL_PASSWORD": "DuhanPanel2026",
+}
+for _k, _v in DEFAULTS.items():
+    if not os.getenv(_k, "").strip():
+        os.environ[_k] = _v
+
+
 def load_settings() -> Settings:
     missing = [k for k in ("API_ID", "API_HASH", "PANEL_PASSWORD") if not os.getenv(k, "").strip()]
     if missing:
