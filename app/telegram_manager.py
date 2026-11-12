@@ -261,8 +261,9 @@ class TelegramManager:
         new_text = self.rules.match(text)
         if new_text is None or new_text == event.message.message:
             return
+        await asyncio.sleep(2)
         try:
-            await event.edit(new_text)
+            await event.edit(new_text, link_preview=True)
         except MessageNotModifiedError:
             return
         except FloodWaitError as exc:
