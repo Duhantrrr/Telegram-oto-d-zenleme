@@ -7,11 +7,10 @@ from telethon.sessions import StringSession
 API_ID = 16896485
 API_HASH = "29b5bb9351b4cb3738d73abaf5eb28ca"
 
-# Geçici hafıza için değişkenler
-temp_client = None
+# Geçici hafıza değişkenleri
 phone_hash_global = None
+phone_global = None
 
-# Render Environment'ta kayıtlı session varsa onu kullanır, yoksa boş başlar
 SESSION_STRING = os.environ.get("SESSION_STRING", "")
 client = TelegramClient(
     StringSession(SESSION_STRING) if SESSION_STRING else "temp_session",
@@ -25,8 +24,11 @@ app = FastAPI(title="Telegram Kontrol Paneli")
 @app.on_event("startup")
 async def startup_event():
   if SESSION_STRING:
-    await client.start()
-    print("Mevcut oturumla bot aktif!")
+    try:
+      await client.start()
+      print("Mevcut oturumla bot aktif!")
+    except Exception as e:
+      print(f"Başlangıç oturum hatası: {e}")
 
 
 # 1. ARKA PLAN: Telegram'da otomatik düzenleme
@@ -54,10 +56,13 @@ async def handle_outgoing_message(event):
 # 2. WEB PANELİ ARAYÜZÜ
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-  is_connected = client.is_connected() and await client.is_user_authorized()
+  is_connected = False
+  try:
+    is_connected = client.is_connected() and await client.is_user_authorized()
+  except Exception:
+    is_connected = False
 
   if not is_connected:
-    # OTURUM AÇIK DEĞİLSE GİRİŞ EKRANI GÖSTER
     return """
         <!DOCTYPE html>
         <html lang="tr">
@@ -84,7 +89,6 @@ async def home(request: Request):
         </html>
         """
 
-  # OTURUM AÇIKSA KONTROL PANELİNİ GÖSTER
   return """
     <!DOCTYPE html>
     <html lang="tr">
@@ -131,10 +135,11 @@ async def home(request: Request):
     """
 
 
-# TELEGRAM KODU GÖNDERME
+# TELEGRAM KODU GÖNDERME (Form ile alacak şekilde düzeltildi)
 @app.post("/send-code", response_class=HTMLResponse)
-async def send_code(phone: str):
-  global client, phone_hash_global
+async def send_code(phone: str = Form(...)):
+  global client, phone_hash_global, phone_global
+  phone_global = phone
   try:
     if not client.is_connected():
       await client.connect()
@@ -156,9 +161,8 @@ async def send_code(phone: str):
                 <h2>📲 Telegram Kodunu Gir</h2>
                 <p><b>{phone}</b> numarasına gelen kodu yazın:</p>
                 <form action="/verify-code" method="post">
-                    <input type="hidden" name="phone" value="{phone}">
                     <input type="text" name="code" placeholder="Örn: 12345" required>
-                    <button type="submit">Giriş Yap</button>
+                    <button type="submit">Devam Et</button>
                 </form>
             </div>
         </body>
@@ -168,27 +172,67 @@ async def send_code(phone: str):
     return f"<h3>Hata: {str(e)}</h3><a href='/'>Geri Dön</a>"
 
 
-# KODU ONAYLAYIP GİRİŞ YAPMA
+# KODU ONAYLAYIP GİRİŞ YAPMA (2FA KONTROLÜ İLE)
 @app.post("/verify-code", response_class=HTMLResponse)
-async def verify_code(phone: str, code: str):
-  global client, phone_hash_global
+async def verify_code(code: str = Form(...)):
+  global client, phone_hash_global, phone_global
   try:
-    await client.sign_in(phone=phone, code=code, phone_code_hash=phone_hash_global)
-    session_str = client.session.save()
-
-    return f"""
-        <h3>✅ Başarıyla Giriş Yapıldı!</h3>
-        <p>Oturumunuz açıldı. Aşağıdaki uzun kodu kopyalayıp Render'daki <b>SESSION_STRING</b> kısmına yapıştırırsanız bir daha kod istemez:</p>
-        <textarea rows="4" style="width:100%;">{session_str}</textarea>
-        <br><br>
-        <a href="/" style="background:#0088cc; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Panele Git</a>
-        """
+    await client.sign_in(
+        phone=phone_global, code=code, phone_code_hash=phone_hash_global
+    )
+    return basarili_sayfa()
   except Exception as e:
-    return f"<h3>Giriş Başarısız: {str(e)}</h3><a href='/'>Geri Dön</a>"
+    error_msg = str(e)
+    # Eğer 2 Adımlı Doğrulama (Cloud Şifresi) varsa buraya düşer
+    if "SessionPasswordNeededError" in error_msg or "password" in error_msg.lower():
+      return f"""
+            <!DOCTYPE html>
+            <html lang="tr">
+            <head><meta charset="UTF-8"><title>2FA Şifre</title>
+            <style>body { font-family: Arial; text-align: center; padding: 40px; background: #f4f4f9; }
+            .card { background: white; padding: 20px; border-radius: 10px; display: inline-block; width: 300px; }
+            input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
+            button { background: #0088cc; color: white; border: none; padding: 10px; width: 100%; border-radius: 5px; }</style>
+            </head>
+            <body>
+                <div class="card">
+                    <h2>🔒 2 Adımlı Doğrulama</h2>
+                    <p>Hesabınızda şifre var. Lütfen Telegram bulut şifrenizi girin:</p>
+                    <form action="/verify-password" method="post">
+                        <input type="password" name="password" placeholder="Bulut Şifreniz" required>
+                        <button type="submit">Giriş Yap</button>
+                    </form>
+                </div>
+            </body>
+            </html>
+            """
+    return f"<h3>Giriş Başarısız: {error_msg}</h3><a href='/'>Geri Dön</a>"
+
+
+# 2FA ŞİFRESİNİ DOĞRULAMA
+@app.post("/verify-password", response_class=HTMLResponse)
+async def verify_password(password: str = Form(...)):
+  global client
+  try:
+    await client.sign_in(password=password)
+    return basarili_sayfa()
+  except Exception as e:
+    return f"<h3>Şifre Yanlış: {str(e)}</h3><a href='/'>Geri Dön</a>"
+
+
+def basarili_sayfa():
+  session_str = client.session.save()
+  return f"""
+    <h3>✅ Başarıyla Giriş Yapıldı!</h3>
+    <p>Oturumunuz açıldı. Bu uzun kodu kopyalayıp Render'daki <b>SESSION_STRING</b> kısmına yapıştırırsanız bir daha asla kod istemez:</p>
+    <textarea rows="4" style="width:100%;">{session_str}</textarea>
+    <br><br>
+    <a href="/" style="background:#0088cc; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Panele Git</a>
+    """
 
 
 @app.post("/send-message", response_class=HTMLResponse)
-async def send_message(chat_id: str, message: str):
+async def send_message(chat_id: str = Form(...), message: str = Form(...)):
   try:
     target = int(chat_id) if chat_id.isdigit() else chat_id
     await client.send_message(target, message)
@@ -198,7 +242,11 @@ async def send_message(chat_id: str, message: str):
 
 
 @app.post("/edit-message", response_class=HTMLResponse)
-async def edit_message(chat_id: str, message_id: int, secim: str):
+async def edit_message(
+    chat_id: str = Form(...),
+    message_id: int = Form(...),
+    secim: str = Form(...),
+):
   try:
     target = int(chat_id) if chat_id.isdigit() else chat_id
     if secim == "done":
